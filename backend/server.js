@@ -26,9 +26,17 @@ if (process.env.NODE_ENV !== "production") {
 			credentials: true,
 		})
 	);
+} else {
+	// Production CORS - allow your Render frontend URL
+	app.use(
+		cors({
+			origin: process.env.CLIENT_URL || "https://linkedin-clone-7t22.onrender.com",
+			credentials: true,
+		})
+	);
 }
 
-app.use(express.json({ limit: "5mb" })); // parse JSON request bodies
+app.use(express.json({ limit: "7mb" })); // parse JSON request bodies
 app.use(cookieParser());
 
 app.use("/api/v1/auth", authRoutes);
@@ -38,25 +46,27 @@ app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/connections", connectionRoutes);
 
 if (process.env.NODE_ENV === "production") {
-  // Get project root (go up from backend directory)
-  const projectRoot = path.resolve(__dirname, "..");
-  const frontendPath = path.join(projectRoot, "frontend", "dist");
+  const frontendPath = path.join(__dirname, "../frontend/dist");
   
   console.log("========================================");
   console.log("__dirname:", __dirname);
-  console.log("Project root:", projectRoot);
   console.log("Frontend path:", frontendPath);
   console.log("Does dist exist?", fs.existsSync(frontendPath));
   if (fs.existsSync(frontendPath)) {
     console.log("Files in dist:", fs.readdirSync(frontendPath));
+    
+    app.use(express.static(frontendPath));
+
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(frontendPath, "index.html"));
+    });
+  } else {
+    console.error("⚠️ Frontend dist folder not found! Build may have failed.");
+    app.get("*", (req, res) => {
+      res.status(503).send("Frontend not built. Check build logs.");
+    });
   }
   console.log("========================================");
-  
-  app.use(express.static(frontendPath));
-
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(frontendPath, "index.html"));
-  });
 }
 
 app.listen(PORT, () => {
