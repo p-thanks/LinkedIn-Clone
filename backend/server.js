@@ -37,11 +37,25 @@ app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/connections", connectionRoutes);
 
 if (process.env.NODE_ENV === "production") {
-	app.use(express.static(path.join(__dirname, "/frontend/dist")));
+  // Get project root (go up from backend directory)
+  const projectRoot = path.resolve(__dirname, "..");
+  const frontendPath = path.join(projectRoot, "frontend", "dist");
+  
+  console.log("========================================");
+  console.log("__dirname:", __dirname);
+  console.log("Project root:", projectRoot);
+  console.log("Frontend path:", frontendPath);
+  console.log("Does dist exist?", fs.existsSync(frontendPath));
+  if (fs.existsSync(frontendPath)) {
+    console.log("Files in dist:", fs.readdirSync(frontendPath));
+  }
+  console.log("========================================");
+  
+  app.use(express.static(frontendPath));
 
-	app.get("*", (req, res) => {
-		res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
-	});
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
 }
 
 app.listen(PORT, () => {
